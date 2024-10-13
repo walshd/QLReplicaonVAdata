@@ -171,28 +171,28 @@ def home():
                            words=json.dumps(list(words)),
                            artifacts=json.dumps(data[:30]))  # Limit to 30 artifacts for initial load
 
-@app.route('/refresh-data')
-def refresh_data():
-    logging.info("Refresh data route accessed")
-    data = fetch_and_cache_data(force_refresh=True)
+# @app.route('/refresh-data')
+# def refresh_data():
+#     logging.info("Refresh data route accessed")
+#     data = fetch_and_cache_data(force_refresh=True)
     
-    timeline_data = {}
-    words = set()
-    for item in data:
-        if item['year']:
-            timeline_data[str(item['year'])] = timeline_data.get(str(item['year']), 0) + 1
-        words.update([item['objectType'], item['place']])
+#     timeline_data = {}
+#     words = set()
+#     for item in data:
+#         if item['year']:
+#             timeline_data[str(item['year'])] = timeline_data.get(str(item['year']), 0) + 1
+#         words.update([item['objectType'], item['place']])
     
-    timeline_data = dict(sorted(timeline_data.items()))
-    words = list(words)
+#     timeline_data = dict(sorted(timeline_data.items()))
+#     words = list(words)
 
-    return jsonify({
-        'status': 'success',
-        'message': 'Data refreshed successfully',
-        'timeline_data': timeline_data,
-        'words': words,
-        'new_artifacts': data[:30]
-    })
+#     return jsonify({
+#         'status': 'success',
+#         'message': 'Data refreshed successfully',
+#         'timeline_data': timeline_data,
+#         'words': words,
+#         'new_artifacts': data[:30]
+#     })
 
 @app.route('/fetch-more-data')
 def fetch_more_data():
