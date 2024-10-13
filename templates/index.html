@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V&A Museum Archive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <header class="bg-blue-600 p-4 flex items-center justify-between">
+        <div class="flex items-center">
+            <img src="{{ url_for('static', filename='placeholder.png') }}" alt="V&A Logo" class="h-8 mr-4">
+            <h1 class="text-2xl font-bold text-white">V&A Museum Archive</h1>
+        </div>
+        <nav>
+            <ul class="flex space-x-4">
+                <li><a href="#" class="text-white hover:underline">Mosaic</a></li>
+                <li><a href="#" class="text-white hover:underline">Grid</a></li>
+                <li><a href="#" class="text-white hover:underline">Your Favourites (0)</a></li>
+            </ul>
+        </nav>
+        <button id="refreshButton" class="bg-white text-blue-600 px-4 py-2 rounded">Refresh Data</button>
+    </header>
+    
+    <main class="container mx-auto px-4 py-8">
+        <section class="mb-8">
+            <div id="timeline" class="bg-white p-4 rounded shadow"></div>
+        </section>
+        
+        <section class="mb-8">
+            <div id="wordcloud" class="bg-white p-4 rounded shadow" style="height: 300px;"></div>
+        </section>
+        
+        <section class="mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="artifactGrid">
+                <!-- Artifacts will be dynamically inserted here -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Parse the data passed from Flask
+        const timelineData = JSON.parse('{{ timeline_data | safe }}');
+        const words = JSON.parse('{{ words | safe }}');
+        const artifacts = JSON.parse('{{ artifacts | safe }}');
+
+        // Timeline creation function
+        function createTimeline(data) {
+            const margin = {top: 20, right: 20, bottom: 30, left: 40};
+            const width = document.getElementById('timeline').offsetWidth - margin.left - margin.right;
+            const height = 200 - margin.top - margin.bottom;
+
+            d3.select("#timeline").selectAll("*").remove();
+
+            const svg = d3.select("#timeline").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleBand()
+                .range([0, width])
+                .padding(0.1);
+
+            const y = d3.scaleLinear()
+                .range([height, 0]);
+
+            const timelineArray = Object.entries(data).map(([year, count]) => ({year: +year, count}));
+
+            x.domain(timelineArray.map(d => d.year));
+            y.domain([0, d3.max(timelineArray, d => d.count)]);
+
+            svg.selectAll(".bar")
+                .data(timelineArray)
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", d => x(d.year))
+                .attr("width", x.bandwidth())
+                .attr("y", d => y(d.count))
+                .attr("height", d => height - y(d.count))
+                .attr("fill", "steelblue")
+                .style("cursor", "pointer")
+                .on("click", function(event, d) {
+                    filterArtifactsByYear(d.year);
+                });
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickValues(x.domain().filter(year => year % 10 === 0)));
+
+            svg.append("g")
+                .call(d3.axisLeft(y));
+        }
+
+        // Word cloud creation function
+        function createWordCloud(words) {
+            const wordcloudContainer = document.getElementById('wordcloud');
+            const width = wordcloudContainer.offsetWidth;
+            const height = Math.min(300, Math.max(200, width * 0.5));  // Min 200px, max 300px, or 50% of width
+
+            // Clear existing word cloud
+            d3.select("#wordcloud").selectAll("*").remove();
+
+            if (words.length === 0) {
+                console.error("Word cloud data is empty");
+                wordcloudContainer.innerHTML = '<p class="text-red-500">No word cloud data available. Please try refreshing.</p>';
+                return;
+            }
+
+            const layout = d3.layout.cloud()
+                .size([width, height])
+                .words(words.map(d => ({text: d, size: 10 + Math.random() * 20})))
+                .padding(5)
+                .rotate(() => ~~(Math.random() * 2) * 90)
+                .font("Arial")
+                .fontSize(d => d.size)
+                .on("end", draw);
+
+            layout.start();
+
+            function draw(words) {
+                const svg = d3.select("#wordcloud").append("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .attr("viewBox", `0 0 ${width} ${height}`)
+                    .attr("preserveAspectRatio", "xMidYMid meet");
+
+                const wordsGroup = svg.append("g")
+                    .attr("transform", `translate(${width/2},${height/2})`);
+
+                wordsGroup.selectAll("text")
+                    .data(words)
+                    .enter().append("text")
+                    .style("font-size", d => d.size + "px")
+                    .style("font-family", "Arial")
+                    .attr("text-anchor", "middle")
+                    .attr("transform", d => `translate(${d.x},${d.y})rotate(${d.rotate})`)
+                    .text(d => d.text);
+
+                // Center the words if there aren't many
+                if (words.length < 10) {
+                    const bbox = wordsGroup.node().getBBox();
+                    const scale = Math.min(width / bbox.width, height / bbox.height) * 0.9;
+                    const translateX = (width - bbox.width * scale) / 2 - bbox.x * scale;
+                    const translateY = (height - bbox.height * scale) / 2 - bbox.y * scale;
+                    wordsGroup.attr("transform", `translate(${translateX},${translateY}) scale(${scale})`);
+                }
+            }
+        }
+
+        // Function to display artifacts
+        function displayArtifacts(artifacts) {
+            const grid = document.getElementById('artifactGrid');
+            grid.innerHTML = ''; // Clear existing artifacts
+            artifacts.forEach(artifact => {
+                const artifactElement = document.createElement('div');
+                artifactElement.className = 'bg-white border rounded overflow-hidden shadow';
+                artifactElement.innerHTML = `
+                    ${artifact.imageUrl 
+                        ? `<img src="${artifact.imageUrl}/full/!400,400/0/default.jpg" 
+                             alt="Artifact from ${artifact.date}" 
+                             class="w-full h-48 object-cover">`
+                        : `<div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                             <span class="text-gray-500">No image available</span>
+                           </div>`
+                    }
+                    <div class="p-2 text-center text-sm">
+                        <p class="font-bold">${artifact.date}</p>
+                        <p class="text-xs text-gray-500">${artifact.objectType}</p>
+                    </div>
+                `;
+                grid.appendChild(artifactElement);
+            });
+        }
+
+        // Function to filter artifacts by year
+        function filterArtifactsByYear(year) {
+            fetch(`/filter-artifacts?year=${year}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        displayArtifacts(data.artifacts);
+                        updateActiveFilters(year);
+                    } else {
+                        console.error('Failed to filter artifacts');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Function to update active filters display
+        function updateActiveFilters(year) {
+            const activeFiltersElement = document.getElementById('activeFilters');
+            activeFiltersElement.textContent = `Year: ${year}`;
+        }
+
+        // Initial data load
+        document.addEventListener('DOMContentLoaded', function() {
+            createTimeline(timelineData);
+            createWordCloud(words);
+            displayArtifacts(artifacts);
+        });
+
+        // WebSocket connection
+        const socket = io();
+
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+
+        socket.on('new_data', function(data) {
+            console.log('Received new data:', data);
+            // Update timeline
+            createTimeline(data.timeline_data);
+
+            // Update word cloud
+            createWordCloud(data.words);
+
+            // Add new artifacts to the grid
+            const grid = document.getElementById('artifactGrid');
+            data.new_artifacts.forEach(artifact => {
+                const artifactElement = document.createElement('div');
+                artifactElement.className = 'bg-white border rounded overflow-hidden shadow';
+                artifactElement.innerHTML = `
+                    ${artifact.imageUrl 
+                        ? `<img src="${artifact.imageUrl}/full/!400,400/0/default.jpg" 
+                             alt="Artifact from ${artifact.date}" 
+                             class="w-full h-48 object-cover">`
+                        : `<div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                             <span class="text-gray-500">No image available</span>
+                           </div>`
+                    }
+                    <div class="p-2 text-center text-sm">
+                        <p class="font-bold">${artifact.date}</p>
+                        <p class="text-xs text-gray-500">${artifact.objectType}</p>
+                    </div>
+                `;
+                grid.appendChild(artifactElement);
+            });
+        });
+    </script>
+</body>
+</html>
