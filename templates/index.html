@@ -40,6 +40,11 @@
                 <!-- Artifacts will be dynamically inserted here -->
             </div>
         </section>
+        
+        <div class="container mx-auto px-4 py-2 flex justify-between items-center">
+            <div id="activeFilters" class="text-gray-600"></div>
+            <button id="clearFilters" class="bg-gray-200 text-gray-700 px-4 py-2 rounded">Clear Filters</button>
+        </div>
     </main>
 
     <script>
@@ -139,7 +144,11 @@
                     .style("font-family", "Arial")
                     .attr("text-anchor", "middle")
                     .attr("transform", d => `translate(${d.x},${d.y})rotate(${d.rotate})`)
-                    .text(d => d.text);
+                    .text(d => d.text)
+                    .style("cursor", "pointer")
+                    .on("click", function(event, d) {
+                        filterArtifactsByWord(d.text);
+                    });
 
                 // Center the words if there aren't many
                 if (words.length < 10) {
@@ -192,10 +201,28 @@
                 .catch(error => console.error('Error:', error));
         }
 
+        // Function to filter artifacts by word
+        function filterArtifactsByWord(word) {
+            fetch(`/filter-artifacts?word=${encodeURIComponent(word)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        displayArtifacts(data.artifacts);
+                        updateActiveFilters(null, word);
+                    } else {
+                        console.error('Failed to filter artifacts');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
         // Function to update active filters display
-        function updateActiveFilters(year) {
+        function updateActiveFilters(year, word) {
             const activeFiltersElement = document.getElementById('activeFilters');
-            activeFiltersElement.textContent = `Year: ${year}`;
+            let filterText = '';
+            if (year) filterText += `Year: ${year}`;
+            if (word) filterText += (filterText ? ', ' : '') + `Word: ${word}`;
+            activeFiltersElement.textContent = filterText || 'No active filters';
         }
 
         // Initial data load
@@ -241,6 +268,11 @@
                 `;
                 grid.appendChild(artifactElement);
             });
+        });
+
+        document.getElementById('clearFilters').addEventListener('click', function() {
+            displayArtifacts(artifacts);
+            updateActiveFilters();
         });
     </script>
 </body>

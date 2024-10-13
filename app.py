@@ -169,7 +169,7 @@ def home():
     return render_template('index.html', 
                            timeline_data=json.dumps(timeline_data),
                            words=json.dumps(list(words)),
-                           artifacts=json.dumps(data))
+                           artifacts=json.dumps(data[:30]))  # Limit to 30 artifacts for initial load
 
 @app.route('/refresh-data')
 def refresh_data():
@@ -226,9 +226,16 @@ def fetch_more_data():
 @app.route('/filter-artifacts')
 def filter_artifacts():
     year = request.args.get('year', type=int)
+    word = request.args.get('word')
     data = fetch_and_cache_data()
     
-    filtered_artifacts = [artifact for artifact in data if artifact['year'] == year]
+    filtered_artifacts = data
+    if year:
+        filtered_artifacts = [artifact for artifact in filtered_artifacts if artifact['year'] == year]
+    if word:
+        filtered_artifacts = [artifact for artifact in filtered_artifacts 
+                              if word.lower() in artifact['objectType'].lower() 
+                              or word.lower() in artifact['place'].lower()]
     
     return jsonify({
         'status': 'success',
