@@ -47,6 +47,21 @@
         </div>
     </main>
 
+    <div id="itemModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div id="modalContent">
+                    <!-- Content will be dynamically inserted here -->
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="closeModal" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Parse the data passed from Flask
         const timelineData = JSON.parse('{{ timeline_data | safe }}');
@@ -167,7 +182,7 @@
             grid.innerHTML = ''; // Clear existing artifacts
             artifacts.forEach(artifact => {
                 const artifactElement = document.createElement('div');
-                artifactElement.className = 'bg-white border rounded overflow-hidden shadow';
+                artifactElement.className = 'bg-white border rounded overflow-hidden shadow cursor-pointer';
                 artifactElement.innerHTML = `
                     ${artifact.imageUrl 
                         ? `<img src="${artifact.imageUrl}/full/!400,400/0/default.jpg" 
@@ -182,6 +197,7 @@
                         <p class="text-xs text-gray-500">${artifact.objectType}</p>
                     </div>
                 `;
+                artifactElement.addEventListener('click', () => showModal(artifact));
                 grid.appendChild(artifactElement);
             });
         }
@@ -230,6 +246,16 @@
             createTimeline(timelineData);
             createWordCloud(words);
             displayArtifacts(artifacts);
+
+            // Close modal when clicking the close button
+            document.getElementById('closeModal').addEventListener('click', closeModal);
+
+            // Close modal when clicking outside the modal content
+            document.getElementById('itemModal').addEventListener('click', function(event) {
+                if (event.target === this) {
+                    closeModal();
+                }
+            });
         });
 
         // WebSocket connection
@@ -274,6 +300,38 @@
             displayArtifacts(artifacts);
             updateActiveFilters();
         });
+
+        function showModal(artifact) {
+            const modal = document.getElementById('itemModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modalContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4">${artifact.title}</h2>
+                ${artifact.imageUrl 
+                    ? `<img src="${artifact.imageUrl}/full/!800,800/0/default.jpg" 
+                         alt="Artifact from ${artifact.date}" 
+                         class="mx-auto max-w-full h-auto mb-4">`
+                    : `<div class="w-full h-64 bg-gray-200 flex items-center justify-center mb-4">
+                         <span class="text-gray-500">No image available</span>
+                       </div>`
+                }
+                <div class="text-left">
+                    <p><strong>Date:</strong> ${artifact.date}</p>
+                    <p><strong>Year:</strong> ${artifact.year || 'Unknown'}</p>
+                    <p><strong>Object Type:</strong> ${artifact.objectType}</p>
+                    <p><strong>Place:</strong> ${artifact.place}</p>
+                    <p><strong>Artist:</strong> ${artifact.artist}</p>
+                    <p><strong>ID:</strong> ${artifact.id}</p>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('itemModal');
+            modal.classList.add('hidden');
+        }
     </script>
 </body>
 </html>
