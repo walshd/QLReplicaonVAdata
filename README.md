@@ -26,37 +26,44 @@
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+To set up this project locally, follow these steps:
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* npm
-  ```sh
-  npm install npm@latest -g
-  ```
+* Python 3.7+
+* pip (Python package installer)
 
 ### Installation
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
+1. Clone the repo
    ```sh
    git clone https://github.com/walshd/QLReplicaonVAdata
    ```
-3. Install NPM packages
+2. Navigate to the project directory
    ```sh
-   npm install
+   cd QLReplicaonVAdata
    ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
-5. Change git remote url to avoid accidental pushes to base project
+3. Create a virtual environment
    ```sh
-   git remote set-url origin github_username/repo_name
-   git remote -v # confirm the changes
+   python -m venv venv
    ```
+4. Activate the virtual environment
+   ```sh
+   # On Windows
+   venv\Scripts\activate
+   # On macOS and Linux
+   source venv/bin/activate
+   ```
+5. Install required packages
+   ```sh
+   pip install -r requirements.txt
+   ```
+6. Run the Flask application
+   ```sh
+   flask run
+   ```
+
+The application should now be running on `http://localhost:5000`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -65,9 +72,17 @@ This is an example of how to list things you need to use the software and how to
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+This Flask-based application provides a generous interface (attempt at a replica f Whitelaws Queenslander interface) for exploring the V&A collection. Here are some ways to use it:
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+1. Open your web browser and navigate to `http://localhost:5000`.
+2. Browse the collection by category, material, or time period.
+3. Use the search function to find specific items or themes.
+4. Click on individual items to view detailed information and high-resolution images.
+5. Use the timeline feature to explore the collection chronologically.
+
+The data is sourced from the V&A API and cached locally to improve performance and manage API request limits.
+
+<!-- For a live demo and more detailed usage instructions, please visit our [project website](https://example.com/demo). -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -76,38 +91,20 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-    - [ ] Nested Feature
+- [x] Basic Flask application setup
+- [x] V&A API integration
+- [x] Local data caching implementation
+- [x] Add item grid view feature
+- [x] Add timeline visualization feature
+- [-] Add wordcloud visualization feature
+- [ ] Improve UI/UX design
+- [ ] Optimize performance for large datasets
+- [ ] Add unit tests and integration tests
 
-See the [open issues](https://github.com/github_username/repo_name/issues) for a full list of proposed features (and known issues).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- CONTRIBUTING -->
-## Contributing
-
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+See the [open issues](https://github.com/walshd/QLReplicaonVAdata/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### Top contributors:
-
-<a href="https://github.com/github_username/repo_name/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=github_username/repo_name" alt="contrib.rocks image" />
-</a>
 
 
 
@@ -134,10 +131,16 @@ Project Link: [https://github.com/github_username/repo_name](https://github.com/
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* []()
-* []()
-* []()
+* [V&A Museum](https://www.vam.ac.uk/) for providing the open access API and collection data
+* [Mitchell Whitelaw](https://mtchl.net/) for his pioneering work on generous interfaces
+* [Queenslander Generous Interface](https://github.com/StateLibraryQueensland/queenslander) by State Library of Queensland, which inspired this project
+* [Flask](https://flask.palletsprojects.com/) for the web framework
+* [Requests](https://docs.python-requests.org/) for handling API requests
+* [Bootstrap](https://getbootstrap.com) for responsive design components
+* [Font Awesome](https://fontawesome.com) for icons
+* [GitHub Pages](https://pages.github.com) for hosting the project documentation
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 
